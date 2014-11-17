@@ -10,7 +10,7 @@ app.filter('jpg', function() {
 
 app.factory('appStore', function (Flux) {
   var goodTags = ['happy','sad','angry','confused','glasses','troll','cute','child','creepy','stoned','stupid','alone','girl','man','scared','cry','lol','crazy','fuck','celebrity','smile','japanese','cool','clean','sexy'];
-  var Store = Flux.createStore({
+  return Flux.createStore({
     name: 'appStore',
     data: null,
     faceData: null,
@@ -33,7 +33,6 @@ app.factory('appStore', function (Flux) {
     },
 
     initFacesSuccess: function(data) {
-      console.log('faceData:',data);
       faceData = angular.copy(data);
       var faceTagHash = {};
 
@@ -76,7 +75,6 @@ app.factory('appStore', function (Flux) {
         _.each(topTagRandIdxs, function(idxs) {
           choices.push(idxs.pop());
         });
-        console.log('choices: ',choices);
         randPhotoChoices = randPhotoChoices.concat(_.shuffle(choices));
       }
 
@@ -115,10 +113,26 @@ app.factory('appStore', function (Flux) {
       'selectPhoto': []
     }
   });
-  return Store;
 });
 
-app.factory('Dispatcher', function (Flux, appStore) {
+// use angular event broadcasting to separate the route store from
+// the routing "view" components (see app-routes.js)
+app.factory('routeStore', function (Flux, $rootScope, appStore) {
+  return Flux.createStore({
+    name: 'routeStore',
+    actions: {
+      selectPhoto: ['appStore']
+    },
+    selectPhoto: function () {
+      if (appStore.store.myFace) {
+        // switch to results route because a face has been determined
+        $rootScope.$broadcast('route:new', '/results');
+      }
+    }
+  });
+});
+
+app.factory('Dispatcher', function (Flux, appStore, routeStore) {
   return Flux.dispatcher;
 });
 

@@ -1,5 +1,6 @@
 var app = angular.module('app');
 
+// think of $routeProvider as part of the view
 app.config(function($routeProvider, $locationProvider) {
   $routeProvider
     .when('/', {
@@ -16,4 +17,11 @@ app.config(function($routeProvider, $locationProvider) {
     });
 
   $locationProvider.html5Mode(true);
+});
+
+// think of $location as part of the view
+app.run(function ($location, $rootScope, routeStore) {
+  $rootScope.$on('route:new', function (event, route) {
+    $location.url(route);
+  });
 });
