@@ -171,7 +171,7 @@ app.factory('actionCreator', function (Flux, Dispatcher, $http, appStore, $rootS
       console.log('tags:',tags);
       _.each(r, function(v) { localCache.photos[v[0].tag] = angular.copy(v) });  // save to cache
       Dispatcher.dispatch('loadPhotosSuccess', r.concat(cachedPhotos));
-      //$rootScope.$apply();
+      if (tags.length) $rootScope.$apply();
     });
   }
 
