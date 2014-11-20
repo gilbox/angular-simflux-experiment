@@ -1,9 +1,8 @@
 var app = angular.module('app');
 
 app.controller('MainCtrl', function($scope, $location, appStore, actionCreator) {
-  var store = appStore.store;
-  $scope.store = store;
-  console.log("scope.store-->store: ", store);
+  $scope.store = appStore;
+  console.log("scope.store-->: ", $scope.store);
 
   actionCreator.initFaces();
 
@@ -12,7 +11,7 @@ app.controller('MainCtrl', function($scope, $location, appStore, actionCreator) 
   };
 
   $scope.pct = function() {
-    return ~~(100*store.totalVoteCount / store.maxVotes) + '%';
+    return ~~(100*appStore.totalVoteCount / appStore.maxVotes) + '%';
   };
 
 });

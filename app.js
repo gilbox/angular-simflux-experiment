@@ -1,16 +1,16 @@
 var app = angular.module('app', ['ngStorage', 'ngRoute']);
 
-app.constant('Flux', window.simflux.Flux);
-
 app.filter('jpg', function() {
   return function(f) {
     return f.replace('2.jpg','3.jpg');
   }
 });
 
-app.factory('appStore', function (Flux) {
+app.constant('dispatcher', new simflux.Dispatcher());
+
+app.factory('appStore', function (dispatcher) {
   var goodTags = ['happy','sad','angry','confused','glasses','troll','cute','child','creepy','stoned','stupid','alone','girl','man','scared','cry','lol','crazy','fuck','celebrity','smile','japanese','cool','clean','sexy'];
-  return Flux.createStore({
+  return dispatcher.registerStore({
     name: 'appStore',
     data: null,
     faceData: null,
@@ -106,34 +106,26 @@ app.factory('appStore', function (Flux) {
         this.myFace = _.max(faceData, 'voteCount');
         console.log('myFace:',this.myFace);
       }
-    },
-    actions: {
-      'initFacesSuccess': [],
-      'loadPhotosSuccess': [],
-      'selectPhoto': []
     }
   });
 });
 
 // use angular event broadcasting to separate the route store from
 // the routing "view" components (see app-routes.js)
-app.factory('routeStore', function (Flux, $rootScope, appStore) {
-  return Flux.createStore({
+app.factory('routeStore', function ($rootScope, dispatcher, appStore) {
+  return dispatcher.registerStore({
     name: 'routeStore',
     actions: {
       selectPhoto: ['appStore']
     },
     selectPhoto: function () {
-      if (appStore.store.myFace) {
+      dispatcher.waitFor([appStore]);
+      if (appStore.myFace) {
         // switch to results route because a face has been determined
         $rootScope.$broadcast('route:new', '/results');
       }
     }
   });
-});
-
-app.factory('Dispatcher', function (Flux, appStore, routeStore) {
-  return Flux.dispatcher;
 });
 
 app.factory('localCache', function($localStorage) {
@@ -143,7 +135,7 @@ app.factory('localCache', function($localStorage) {
   });
 });
 
-app.factory('actionCreator', function (Flux, Dispatcher, $http, appStore, $rootScope, localCache) {
+app.factory('actionCreator', function ($http, dispatcher, appStore, routeStore, $rootScope, localCache) {
   var searchParams = {
     only: 'people,performing arts',
     //only: 'abstract',
@@ -167,12 +159,12 @@ app.factory('actionCreator', function (Flux, Dispatcher, $http, appStore, $rootS
   }
 
   function loadPhotos() {
-    console.log('loadPhotos...', appStore.store.tags);
+    console.log('loadPhotos...', appStore.tags);
     var cachedPhotos = [];
     var tags = [];
 
     // pull from local storage
-    _.each(appStore.store.tags, function (tag) {
+    _.each(appStore.tags, function (tag) {
       if (localCache.photos[tag]) {
         cachedPhotos.push(angular.copy(localCache.photos[tag]));
       } else {
@@ -184,7 +176,7 @@ app.factory('actionCreator', function (Flux, Dispatcher, $http, appStore, $rootS
     async.map(tags, photoSearch, function (e,r) {
       console.log('tags:',tags);
       _.each(r, function(v) { localCache.photos[v[0].tag] = angular.copy(v) });  // save to cache
-      Dispatcher.dispatch('loadPhotosSuccess', r.concat(cachedPhotos));
+      dispatcher.dispatch('loadPhotosSuccess', r.concat(cachedPhotos));
       if (tags.length) $rootScope.$apply();
     });
   }
@@ -197,23 +189,23 @@ app.factory('actionCreator', function (Flux, Dispatcher, $http, appStore, $rootS
       // then load photos
       if (localCache.allFaces) {
         console.log('(loading face data from cache)');
-        Dispatcher.dispatch('initFacesSuccess', localCache.allFaces);
+        dispatcher.dispatch('initFacesSuccess', localCache.allFaces);
         loadPhotos();
       } else {
         $http.get(url)
           .success(function(data) {
             localCache.allFaces = data;
-            Dispatcher.dispatch('initFacesSuccess', data);
+            dispatcher.dispatch('initFacesSuccess', data);
             loadPhotos();
           })
           .error(function(data) {
             console.log("error:", data);
-            Dispatcher.dispatch('initFacesError', data);
+            dispatcher.dispatch('initFacesError', data);
           });
       }
     },
     selectPhoto: function(photo) {
-      Dispatcher.dispatch('selectPhoto', photo);
+      dispatcher.dispatch('selectPhoto', photo);
       loadPhotos();
     }
   };
