@@ -11,7 +11,6 @@ app.constant('dispatcher', new simflux.Dispatcher());
 app.factory('appStore', function (dispatcher) {
   var goodTags = ['happy','sad','angry','confused','glasses','troll','cute','child','creepy','stoned','stupid','alone','girl','man','scared','cry','lol','crazy','fuck','celebrity','smile','japanese','cool','clean','sexy'];
   return dispatcher.registerStore({
-    name: 'appStore',
     data: null,
     faceData: null,
     faceTagHash: null,
@@ -114,10 +113,6 @@ app.factory('appStore', function (dispatcher) {
 // the routing "view" components (see app-routes.js)
 app.factory('routeStore', function ($rootScope, dispatcher, appStore) {
   return dispatcher.registerStore({
-    name: 'routeStore',
-    actions: {
-      selectPhoto: ['appStore']
-    },
     selectPhoto: function () {
       dispatcher.waitFor([appStore]);
       if (appStore.myFace) {
